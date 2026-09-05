@@ -1,0 +1,3 @@
+#!/bin/sh
+cd "$(dirname "$0")/src" || exit 1
+python3 repl.py
