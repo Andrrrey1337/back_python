@@ -7,8 +7,8 @@ person:
     add ID IP PLATFORM
     all
     get ID
-    
-instruction: 
+
+instruction:
     add ID CONTENT PERSON DESCRIPTION STAGE SPAWNED
     all
     get ID
@@ -17,7 +17,7 @@ answer:
     add ID OUTPUT STAGE EXCEPTION INSTRUCTION CACHE_HIT
     all
     get ID
-    
+
 query
 help
 exit'''

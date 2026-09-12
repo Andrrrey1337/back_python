@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as element_tree
 
 PROTOCOL_VERSION = 1
 BYTE_ORDER = "little"
@@ -69,45 +69,51 @@ def recv_exact(sock, count):
 
 def make_request_xml(params):
     """Формирование XML тела запроса из переданных параметров"""
-    root = ET.Element("request")
+    root = element_tree.Element("request")
     for key, value in params.items():
-        child = ET.SubElement(root, key)
+        child = element_tree.SubElement(root, key)
         child.text = str(value)
-    return ET.tostring(root, encoding="unicode")
+    return element_tree.tostring(root, encoding="unicode")
 
 
 def parse_request_xml(xml_text):
     """Парсинг XML запроса в словарь аргументов"""
-    root = ET.fromstring(xml_text)
+    root = element_tree.fromstring(xml_text)
     return {child.tag: child.text for child in root}
 
 
 def make_response_xml(status, data=None, error=""):
     """Формирование XML ответа со статусом результатом или ошибкой"""
-    root = ET.Element("response", {"status": status})
+    root = element_tree.Element("response", {"status": status})
     if status == "error":
-        err_node = ET.SubElement(root, "error")
+        err_node = element_tree.SubElement(root, "error")
         err_node.text = str(error)
     elif data is None:
-        ET.SubElement(root, "null")
+        element_tree.SubElement(root, "null")
     elif isinstance(data, list) and (not data or isinstance(data[0], list)):
-        list_node = ET.SubElement(root, "list")
+        list_node = element_tree.SubElement(root, "list")
         for row in data:
-            row_node = ET.SubElement(list_node, "row")
+            row_node = element_tree.SubElement(list_node, "row")
             for item in row:
-                col_node = ET.SubElement(row_node, "col")
-                col_node.text = str(item)
+                col_node = element_tree.SubElement(row_node, "col")
+                if item is None:
+                    col_node.set("null", "true")
+                else:
+                    col_node.text = str(item)
     elif isinstance(data, list):
-        row_node = ET.SubElement(root, "row")
+        row_node = element_tree.SubElement(root, "row")
         for item in data:
-            col_node = ET.SubElement(row_node, "col")
-            col_node.text = str(item)
-    return ET.tostring(root, encoding="unicode")
+            col_node = element_tree.SubElement(row_node, "col")
+            if item is None:
+                col_node.set("null", "true")
+            else:
+                col_node.text = str(item)
+    return element_tree.tostring(root, encoding="unicode")
 
 
 def parse_response_xml(xml_text):
     """Парсинг XML ответа с преобразованием ошибки в исключение"""
-    root = ET.fromstring(xml_text)
+    root = element_tree.fromstring(xml_text)
     if root.attrib.get("status") == "error":
         err_node = root.find("error")
         msg = err_node.text if err_node is not None else "Error"
@@ -118,9 +124,15 @@ def parse_response_xml(xml_text):
     if list_node is not None:
         rows = []
         for r in list_node.findall("row"):
-            rows.append([c.text for c in r.findall("col")])
+            rows.append([
+                None if col.get("null") == "true" else col.text
+                for col in r.findall("col")
+            ])
         return rows
     row_node = root.find("row")
     if row_node is not None:
-        return [c.text for c in row_node.findall("col")]
+        return [
+            None if col.get("null") == "true" else col.text
+            for col in row_node.findall("col")
+        ]
     return None

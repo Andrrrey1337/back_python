@@ -3,6 +3,7 @@ set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
+export PYTHONPATH="$DIR:$DIR/src:$PYTHONPATH"
 
 case "$1" in
     server)
@@ -13,6 +14,10 @@ case "$1" in
         ;;
     repl)
         python3 src/repl.py
+        ;;
+    test)
+        coverage run --branch --source=src -m unittest discover -s tests -v
+        coverage report -m
         ;;
     *)
         python3 src/rpc_server.py &

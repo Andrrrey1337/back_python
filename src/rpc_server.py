@@ -4,43 +4,43 @@ import model
 import protocol
 
 
-def dispatch(op_code, p):
+OPERATION_HANDLERS = {
+    protocol.OP_CREATE_PERSON: (
+        model.create_person,
+        ("identifier", "ip", "platform"),
+    ),
+    protocol.OP_GET_PERSONS: (model.get_persons, ()),
+    protocol.OP_GET_PERSON: (model.get_person, ("identifier",)),
+    protocol.OP_CREATE_INSTRUCTION: (
+        model.create_instruction,
+        ("identifier", "content", "person", "description", "stage", "spawned"),
+    ),
+    protocol.OP_GET_INSTRUCTIONS: (model.get_instructions, ()),
+    protocol.OP_GET_INSTRUCTION: (model.get_instruction, ("identifier",)),
+    protocol.OP_CREATE_ANSWER: (
+        model.create_answer,
+        (
+            "identifier",
+            "output",
+            "stage",
+            "exception",
+            "instruction",
+            "cache_hit",
+        ),
+    ),
+    protocol.OP_GET_ANSWERS: (model.get_answers, ()),
+    protocol.OP_GET_ANSWER: (model.get_answer, ("identifier",)),
+    protocol.OP_GET_RECENT_ANSWERS: (model.get_recent_answers, ()),
+}
+
+
+def dispatch(op_code, params):
     """Вызов нужной функции в зависимости от кода операции"""
-    if op_code == protocol.OP_CREATE_PERSON:
-        return model.create_person(p["identifier"], p["ip"], p["platform"])
-    if op_code == protocol.OP_GET_PERSONS:
-        return model.get_persons()
-    if op_code == protocol.OP_GET_PERSON:
-        return model.get_person(p["identifier"])
-    if op_code == protocol.OP_CREATE_INSTRUCTION:
-        return model.create_instruction(
-            p["identifier"],
-            p["content"],
-            p["person"],
-            p["description"],
-            p["stage"],
-            p["spawned"],
-        )
-    if op_code == protocol.OP_GET_INSTRUCTIONS:
-        return model.get_instructions()
-    if op_code == protocol.OP_GET_INSTRUCTION:
-        return model.get_instruction(p["identifier"])
-    if op_code == protocol.OP_CREATE_ANSWER:
-        return model.create_answer(
-            p["identifier"],
-            p["output"],
-            p["stage"],
-            p["exception"],
-            p["instruction"],
-            p["cache_hit"],
-        )
-    if op_code == protocol.OP_GET_ANSWERS:
-        return model.get_answers()
-    if op_code == protocol.OP_GET_ANSWER:
-        return model.get_answer(p["identifier"])
-    if op_code == protocol.OP_GET_RECENT_ANSWERS:
-        return model.get_recent_answers()
-    raise ValueError("Unknown op_code")
+    try:
+        handler, argument_names = OPERATION_HANDLERS[op_code]
+    except KeyError as exc:
+        raise ValueError("Unknown op_code") from exc
+    return handler(*(params[name] for name in argument_names))
 
 
 def handle_client(sock, addr):
@@ -75,7 +75,7 @@ def main():
     server.bind((protocol.DEFAULT_HOST, protocol.DEFAULT_PORT))
     server.listen(5)
     print(
-        f"Сервер запущен на {protocol.DEFAULT_HOST}:{protocol.DEFAULT_PORT}",
+        f"Сервер запущен на {protocol.DEFAULT_HOST}: {protocol.DEFAULT_PORT}",
         flush=True,
     )
     try:

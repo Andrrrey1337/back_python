@@ -77,8 +77,12 @@ def get_recent_answers():
     for answer in answers:
         if answer[1] < limit:
             continue
+        matched = False
         for instruction in instructions:
             if instruction[0] == answer[5]:
-                result.append((answer[2], instruction[4]))
+                result.append([answer[2], instruction[4]])
+                matched = True
+        if not matched:
+            result.append([answer[2], None])
 
     return result
