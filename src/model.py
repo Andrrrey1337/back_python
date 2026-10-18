@@ -83,6 +83,6 @@ def get_recent_answers():
                 result.append([answer[2], instruction[4]])
                 matched = True
         if not matched:
-            result.append([answer[2], None])
+            pass
 
     return result
